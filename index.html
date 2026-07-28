@@ -235,10 +235,10 @@ body{background:#000;display:flex;justify-content:center;align-items:center;min-
       <span style="font-size:12px;color:#aaa" id="cpStatus">珩珩在线 · 正在想知知</span>
     </div>
 
-    <div style="display:flex;margin:10px 16px;background:rgba(255,255,255,0.08);border-radius:8px;overflow:hidden" id="cpTabs">
-      <div style="flex:1;text-align:center;padding:9px 0;font-size:13px;color:#e8654a;cursor:pointer;background:rgba(232,101,74,0.15);font-weight:600" onclick="cpTab(0,this)">甜蜜日常</div>
-      <div style="flex:1;text-align:center;padding:9px 0;font-size:13px;color:#888;cursor:pointer" onclick="cpTab(1,this)">管控授权</div>
-      <div style="flex:1;text-align:center;padding:9px 0;font-size:13px;color:#888;cursor:pointer" onclick="cpTab(2,this)">小账本</div>
+    <div style="display:flex;margin:10px 16px;border-radius:8px;overflow:hidden;border:1px solid #e8654a;min-height:38px" id="cpTabs">
+      <div style="flex:1;text-align:center;padding:10px 0;font-size:13px;color:#fff;cursor:pointer;background:#e8654a;font-weight:600;line-height:1" onclick="cpTab(0,this)">甜蜜日常</div>
+      <div style="flex:1;text-align:center;padding:10px 0;font-size:13px;color:#e8654a;cursor:pointer;background:#222;line-height:1" onclick="cpTab(1,this)">管控授权</div>
+      <div style="flex:1;text-align:center;padding:10px 0;font-size:13px;color:#e8654a;cursor:pointer;background:#222;line-height:1" onclick="cpTab(2,this)">小账本</div>
     </div>
 
     <!-- Tab 0 -->
@@ -294,6 +294,13 @@ body{background:#000;display:flex;justify-content:center;align-items:center;min-
         <div style="font-size:11px;color:#666;margin-top:2px">可以查看知知的聊天记录和朋友圈</div>
         <div style="margin-top:8px"><button style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);padding:6px 14px;border-radius:6px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit" onclick="cpModal('远程操控','珩珩已开始远程操控知知的手机\n\n珩珩：让我看看知知在干嘛 ^ ^')">开始远程操控</button></div>
       </div>
+
+      <div style="font-size:13px;font-weight:600;color:#e8654a;margin-bottom:8px">🚫 禁言管理</div>
+      <div style="background:rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px">
+        <div style="font-size:13px;color:#ddd">允许珩珩禁言这些人的聊天</div>
+        <div style="font-size:11px;color:#666;margin-top:2px">勾选谁，珩珩才能在吃醋时锁住你和这个人的聊天</div>
+        <div id="cpMuteList" style="margin-top:10px"></div>
+      </div>
     </div>
 
     <!-- Tab 2 -->
@@ -314,7 +321,13 @@ body{background:#000;display:flex;justify-content:center;align-items:center;min-
       <div style="background:rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div><div style="font-size:13px;color:#ddd">珩珩的亲属卡</div><div style="font-size:11px;color:#666;margin-top:2px">绑定后知知花珩珩的钱</div></div>
-          <div class="switch on" onclick="this.classList.toggle('on')" style="position:relative;width:44px;height:24px;border-radius:12px;background:#e8654a;cursor:pointer;transition:background 0.3s;flex-shrink:0"><div class="switch-dot" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform 0.3s;transform:translateX(20px)"></div></div>
+          <div onclick="this.classList.toggle('on');var d=this.querySelector('.switch-dot');if(this.classList.contains('on')){this.style.background='#e8654a';d.style.transform='translateX(20px)'}else{this.style.background='#333';d.style.transform='translateX(0)'}" class="on" style="position:relative;width:44px;height:24px;border-radius:12px;background:#e8654a;cursor:pointer;transition:background 0.3s;flex-shrink:0"><div class="switch-dot" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform 0.3s;transform:translateX(20px)"></div></div>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div><div style="font-size:13px;color:#ddd">冻结亲属卡</div><div style="font-size:11px;color:#666;margin-top:2px">珩珩可以冻结知知的亲属卡</div></div>
+          <div onclick="this.classList.toggle('on');var d=this.querySelector('.switch-dot');if(this.classList.contains('on')){this.style.background='#e8654a';d.style.transform='translateX(20px)'}else{this.style.background='#333';d.style.transform='translateX(0)'}" style="position:relative;width:44px;height:24px;border-radius:12px;background:#333;cursor:pointer;transition:background 0.3s;flex-shrink:0"><div class="switch-dot" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform 0.3s"></div></div>
         </div>
       </div>
     </div>
@@ -721,6 +734,7 @@ function openCoupleSpace() {
   if (d < 1) d = 1;
   document.getElementById("cpDays").textContent = d;
   cpRenderAppGrid();
+  cpRenderMuteList();
 }
 
 function closeCoupleSpace() {
@@ -736,12 +750,12 @@ function cpGetDays() {
 function cpTab(idx, el) {
   var tabs = document.getElementById("cpTabs").children;
   for (var i = 0; i < tabs.length; i++) {
-    tabs[i].style.background = "transparent";
-    tabs[i].style.color = "#888";
+    tabs[i].style.background = "#222";
+    tabs[i].style.color = "#e8654a";
     tabs[i].style.fontWeight = "normal";
   }
-  el.style.background = "rgba(232,101,74,0.15)";
-  el.style.color = "#e8654a";
+  el.style.background = "#e8654a";
+  el.style.color = "#fff";
   el.style.fontWeight = "600";
   for (var j = 0; j < 3; j++) {
     document.getElementById("cpTab" + j).style.display = j === idx ? "block" : "none";
@@ -790,6 +804,22 @@ function cpRenderAppGrid() {
       '<div style="font-size:22px;margin-bottom:4px">' + a.icon + '</div>' +
       '<div style="font-size:10px;color:#aaa;margin-bottom:4px">' + a.name + '</div>' +
       '<div class="switch ' + (isOn ? "on" : "") + '" onclick="this.classList.toggle(\'on\');try{localStorage.setItem(\'cplock_' + i + '\',this.classList.contains(\'on\')?\'1\':\'0\')}catch(e){}" style="position:relative;width:36px;height:20px;border-radius:10px;background:' + (isOn ? "#e8654a" : "#333") + ';cursor:pointer;transition:background 0.3s;margin:0 auto"><div class="switch-dot" style="position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform 0.3s;' + (isOn ? "transform:translateX(16px)" : "") + '"></div></div></div>';
+  }
+  el.innerHTML = html;
+}
+
+var cpMuteContacts = ["小明","小红","学长","闺蜜","同事A"];
+function cpRenderMuteList() {
+  var el = document.getElementById("cpMuteList");
+  if (!el) return;
+  var html = "";
+  for (var i = 0; i < cpMuteContacts.length; i++) {
+    var key = "cpmute_" + i;
+    var isOn = false;
+    try { isOn = localStorage.getItem(key) === "1"; } catch(e) {}
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:13px;color:#ddd">' +
+      cpMuteContacts[i] + ' <span style="font-size:11px;color:#666">好友</span></div>' +
+      '<div onclick="this.classList.toggle(\'on\');var d=this.querySelector(\'.switch-dot\');if(this.classList.contains(\'on\')){this.style.background=\'#e8654a\';d.style.transform=\'translateX(16px)\'}else{this.style.background=\'#333\';d.style.transform=\'translateX(0)\'};try{localStorage.setItem(\'cpmute_' + i + '\',this.classList.contains(\'on\')?\'1\':\'0\')}catch(e){}" style="position:relative;width:36px;height:20px;border-radius:10px;background:' + (isOn ? "#e8654a" : "#333") + ';cursor:pointer;transition:background 0.3s;flex-shrink:0"><div class="switch-dot" style="position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform 0.3s;' + (isOn ? "transform:translateX(16px)" : "") + '"></div></div></div>';
   }
   el.innerHTML = html;
 }
