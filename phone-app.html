@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>电话</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#000;font-family:-apple-system,'Segoe UI',sans-serif;display:flex;justify-content:center;min-height:100vh}
+.app{width:100%;max-width:390px;min-height:100vh;background:#000;color:#fff;position:relative;overflow:hidden}
+.page{display:none;flex-direction:column;min-height:100vh;padding-bottom:70px}
+.page.active{display:flex}
+
+/* 底部tab */
+.tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:390px;display:flex;background:rgba(17,17,17,0.95);border-top:1px solid #222;padding:6px 0 22px;z-index:15}
+.tab-item{flex:1;text-align:center;cursor:pointer;padding-top:4px}
+.tab-icon{font-size:18px;margin-bottom:2px}
+.tab-label{font-size:10px;color:#888}
+.tab-item.active .tab-label{color:#4cd964}
+.tab-item.active .tab-icon{filter:brightness(1.5)}
+
+/* 拨号页 */
+.dial-header{padding:20px 16px 10px;font-size:28px;font-weight:700}
+.dial-type{display:flex;justify-content:center;gap:4px;margin:10px 0 6px}
+.dial-type-btn{padding:6px 20px;border-radius:16px;font-size:13px;cursor:pointer;border:none;font-family:inherit}
+.dial-type-btn.active{background:#fff;color:#000}
+.dial-type-btn:not(.active){background:transparent;color:#888}
+.dial-anon{text-align:center;font-size:11px;color:#888;margin-bottom:6px}
+.dial-display{text-align:center;font-size:36px;font-weight:300;letter-spacing:2px;min-height:50px;padding:10px;color:#fff}
+.dial-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:10px 30px;max-width:320px;margin:0 auto}
+.dial-key{width:72px;height:72px;border-radius:50%;background:#2a2a2a;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;margin:0 auto;transition:background 0.15s;-webkit-user-select:none;user-select:none}
+.dial-key:active{background:#444}
+.dial-key .num{font-size:28px;font-weight:300}
+.dial-key .letters{font-size:9px;color:#888;letter-spacing:2px;margin-top:-2px}
+.dial-actions{display:flex;justify-content:center;align-items:center;gap:40px;padding:16px 0}
+.call-btn{width:64px;height:64px;border-radius:50%;background:#4cd964;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;border:none;transition:transform 0.15s}
+.call-btn:active{transform:scale(0.95)}
+.del-btn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#888;cursor:pointer;background:none;border:none}
+
+/* 通讯录 */
+.contact-header{padding:16px;font-size:28px;font-weight:700}
+.contact-search{margin:0 16px 12px;background:#1a1a1a;border:none;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;width:calc(100% - 32px);outline:none;font-family:inherit}
+.contact-item{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid #1a1a1a;cursor:pointer}
+.contact-item:active{background:rgba(255,255,255,0.04)}
+.contact-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;margin-right:12px;flex-shrink:0}
+.contact-info{flex:1}
+.contact-name{font-size:15px}
+.contact-num{font-size:12px;color:#888;margin-top:2px}
+.contact-tag{font-size:10px;color:#4cd964;margin-top:2px}
+
+/* 最近通话 */
+.recent-header{padding:16px;font-size:28px;font-weight:700}
+.recent-item{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid #1a1a1a}
+.recent-icon{margin-right:10px;font-size:16px}
+.recent-info{flex:1}
+.recent-name{font-size:15px}
+.recent-detail{font-size:12px;color:#888;margin-top:2px}
+.recent-time{font-size:12px;color:#888}
+
+/* 收藏 */
+.fav-header{padding:16px;font-size:28px;font-weight:700}
+
+/* 通话界面 */
+.call-screen{position:absolute;inset:0;background:linear-gradient(180deg,#1a1a2a 0%,#111 100%);z-index:30;display:none;flex-direction:column;align-items:center;justify-content:space-between;padding:60px 20px 40px}
+.call-screen.active{display:flex}
+.call-screen .avatar{width:90px;height:90px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:14px}
+.call-screen .name{font-size:24px;font-weight:600;margin-bottom:4px}
+.call-screen .number{font-size:14px;color:#888;margin-bottom:4px}
+.call-screen .status{font-size:13px;color:#4cd964;margin-bottom:8px}
+.call-screen .call-timer{font-size:14px;color:#aaa;margin-bottom:8px}
+.call-screen .ai-response{font-size:14px;color:#6cf;text-align:center;min-height:24px;padding:0 20px;margin:10px 0}
+.call-screen .chat-area{width:100%;display:flex;gap:8px;margin:10px 0}
+.call-screen .chat-input{flex:1;background:#222;border:none;border-radius:20px;padding:10px 16px;color:#fff;font-size:14px;outline:none;font-family:inherit}
+.call-screen .chat-send-btn{background:#4cd964;border:none;border-radius:20px;padding:8px 16px;color:#fff;font-size:13px;cursor:pointer;font-family:inherit}
+.call-controls{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.call-ctrl{width:64px;text-align:center;cursor:pointer}
+.call-ctrl-icon{width:52px;height:52px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 4px}
+.call-ctrl-icon.active{background:#fff}
+.call-ctrl-icon.active span{filter:invert(1)}
+.call-ctrl-label{font-size:10px;color:#888}
+.end-call-btn{width:64px;height:64px;border-radius:50%;background:#ff3b30;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;border:none;margin-top:20px}
+
+/* 来电界面 */
+.incoming-screen{position:absolute;inset:0;background:linear-gradient(180deg,#1a1a2a 0%,#111 100%);z-index:31;display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px}
+.incoming-screen.active{display:flex}
+.incoming-pulse{animation:inPulse 2s ease infinite}
+@keyframes inPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.1);opacity:0.8}}
+.incoming-btns{display:flex;gap:60px;margin-top:40px}
+.incoming-decline{width:64px;height:64px;border-radius:50%;background:#ff3b30;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;border:none}
+.incoming-accept{width:64px;height:64px;border-radius:50%;background:#4cd964;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;border:none}
+
+/* 留言 */
+.vm-header{padding:16px;font-size:28px;font-weight:700}
+.vm-item{padding:14px 16px;border-bottom:1px solid #1a1a1a}
+.vm-name{font-size:14px;font-weight:500}
+.vm-text{font-size:12px;color:#888;margin-top:4px;line-height:1.5}
+.vm-time{font-size:11px;color:#555;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 收藏 -->
+  <div class="page" id="pageFav">
+    <div class="fav-header">收藏</div>
+    <div id="favList"></div>
+  </div>
+
+  <!-- 最近 -->
+  <div class="page" id="pageRecent">
+    <div class="recent-header">最近</div>
+    <div id="recentList"></div>
+  </div>
+
+  <!-- 通讯录 -->
+  <div class="page" id="pageContacts">
+    <div class="contact-header">通讯录</div>
+    <input class="contact-search" placeholder="搜索联系人..." oninput="filterContacts(this.value)">
+    <div id="contactList"></div>
+  </div>
+
+  <!-- 拨号 -->
+  <div class="page active" id="pageDial">
+    <div class="dial-header">拨号键盘</div>
+    <div class="dial-type">
+      <button class="dial-type-btn active" onclick="setDialType(0,this)">主号</button>
+      <button class="dial-type-btn" onclick="setDialType(1,this)">匿名号</button>
+    </div>
+    <div class="dial-anon" id="dialMain">主号 186 5200 1314</div>
+    <div class="dial-anon" id="dialAnon" style="display:none">当前匿名号 131 7895 7930</div>
+    <div class="dial-display" id="dialDisplay"></div>
+    <div class="dial-pad">
+      <div class="dial-key" onclick="pressKey('1')"><span class="num">1</span></div>
+      <div class="dial-key" onclick="pressKey('2')"><span class="num">2</span><span class="letters">ABC</span></div>
+      <div class="dial-key" onclick="pressKey('3')"><span class="num">3</span><span class="letters">DEF</span></div>
+      <div class="dial-key" onclick="pressKey('4')"><span class="num">4</span><span class="letters">GHI</span></div>
+      <div class="dial-key" onclick="pressKey('5')"><span class="num">5</span><span class="letters">JKL</span></div>
+      <div class="dial-key" onclick="pressKey('6')"><span class="num">6</span><span class="letters">MNO</span></div>
+      <div class="dial-key" onclick="pressKey('7')"><span class="num">7</span><span class="letters">PQRS</span></div>
+      <div class="dial-key" onclick="pressKey('8')"><span class="num">8</span><span class="letters">TUV</span></div>
+      <div class="dial-key" onclick="pressKey('9')"><span class="num">9</span><span class="letters">WXYZ</span></div>
+      <div class="dial-key" onclick="pressKey('*')"><span class="num">*</span></div>
+      <div class="dial-key" onclick="pressKey('0')"><span class="num">0</span><span class="letters">+</span></div>
+      <div class="dial-key" onclick="pressKey('#')"><span class="num">#</span></div>
+    </div>
+    <div class="dial-actions">
+      <div style="width:40px"></div>
+      <button class="call-btn" onclick="makeCall()">📞</button>
+      <button class="del-btn" onclick="delKey()">⌫</button>
+    </div>
+  </div>
+
+  <!-- 信息（简单） -->
+  <div class="page" id="pageMsg">
+    <div class="recent-header">信息</div>
+    <div id="smsList"></div>
+  </div>
+
+  <!-- 留言 -->
+  <div class="page" id="pageVM">
+    <div class="vm-header">留言</div>
+    <div id="vmList"></div>
+  </div>
+
+  <!-- 通话界面 -->
+  <div class="call-screen" id="callScreen">
+    <div style="text-align:center">
+      <div class="avatar" id="csAvatar">🦀</div>
+      <div class="name" id="csName">珩珩</div>
+      <div class="number" id="csNumber">520 1314 0726</div>
+      <div class="status" id="csStatus">正在拨号...</div>
+      <div class="call-timer" id="csTimer" style="display:none">00:00</div>
+      <div class="ai-response" id="csResponse"></div>
+    </div>
+    <div style="width:100%">
+      <div class="chat-area" id="csChatArea" style="display:none">
+        <input class="chat-input" id="csInput" placeholder="通话中打字..." onkeydown="if(event.key==='Enter')sendCallMsg()">
+        <button class="chat-send-btn" onclick="sendCallMsg()">发送</button>
+      </div>
+      <div class="call-controls">
+        <div class="call-ctrl" onclick="toggleCtrl(this)"><div class="call-ctrl-icon"><span>🔊</span></div><div class="call-ctrl-label">免提</div></div>
+        <div class="call-ctrl"><div class="call-ctrl-icon"><span>📹</span></div><div class="call-ctrl-label">FaceTime</div></div>
+        <div class="call-ctrl" onclick="toggleCtrl(this)"><div class="call-ctrl-icon"><span>🎤</span></div><div class="call-ctrl-label">静音</div></div>
+      </div>
+      <div style="text-align:center">
+        <button class="end-call-btn" onclick="endCall()">📕</button>
+        <div style="font-size:10px;color:#888;margin-top:6px">挂断</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 来电界面 -->
+  <div class="incoming-screen" id="incomingScreen">
+    <div class="avatar incoming-pulse" style="width:90px;height:90px;border-radius:50%;background:#e8654a;display:flex;align-items:center;justify-content:center;font-size:40px">🦀</div>
+    <div style="font-size:22px;font-weight:600;margin-top:16px">珩珩</div>
+    <div style="font-size:14px;color:#888;margin-top:6px">520 1314 0726</div>
+    <div style="font-size:13px;color:#4cd964;margin-top:8px">来电...</div>
+    <div class="incoming-btns">
+      <button class="incoming-decline" onclick="declineCall()">📕</button>
+      <button class="incoming-accept" onclick="acceptCall()">📞</button>
+    </div>
+  </div>
+
+  <!-- 底部tab -->
+  <div class="tab-bar">
+    <div class="tab-item" onclick="switchPage('pageFav')"><div class="tab-icon">⭐</div><div class="tab-label">收藏</div></div>
+    <div class="tab-item" onclick="switchPage('pageRecent')"><div class="tab-icon">🕐</div><div class="tab-label">最近</div></div>
+    <div class="tab-item" onclick="switchPage('pageContacts')"><div class="tab-icon">👤</div><div class="tab-label">通讯录</div></div>
+    <div class="tab-item active" onclick="switchPage('pageDial')"><div class="tab-icon">⌨️</div><div class="tab-label">拨号</div></div>
+    <div class="tab-item" onclick="switchPage('pageMsg')"><div class="tab-icon">💬</div><div class="tab-label">信息</div></div>
+    <div class="tab-item" onclick="switchPage('pageVM')"><div class="tab-icon">🎙️</div><div class="tab-label">留言</div></div>
+  </div>
+</div>
+
+<script>
+var EL_KEY = 'sk_1ee660e5f5f337795836643b7bd1f633ec488c0835e8060d';
+var EL_VOICE = 'vQL0CCcyRcUDBMXT8ArP';
+
+var dialNumber = '';
+var dialType = 0;
+var callActive = false;
+var callTimer = 0;
+var callInterval = null;
+var callHistory = [];
+
+var contacts = [
+  {name:'珩珩 🦀',num:'520 1314 0726',avatar:'🦀',bg:'#e8654a',fav:true,tag:'恋人'},
+  {name:'妈妈',num:'138 0000 1111',avatar:'👩',bg:'#5b9bd5',fav:true},
+  {name:'爸爸',num:'139 0000 2222',avatar:'👨',bg:'#27ae60',fav:true},
+  {name:'闺蜜 小A',num:'150 1234 5678',avatar:'👧',bg:'#9b59b6'},
+  {name:'学长',num:'186 8888 9999',avatar:'🧑',bg:'#34495e'},
+  {name:'同事B',num:'177 6666 7777',avatar:'👤',bg:'#666'},
+  {name:'外卖小哥',num:'131 2345 6789',avatar:'🛵',bg:'#f39c12'},
+  {name:'快递',num:'132 9876 5432',avatar:'📦',bg:'#95a5a6'},
+];
+
+/* 拨号 */
+function pressKey(k) {
+  dialNumber += k;
+  renderDial();
+  try { navigator.vibrate && navigator.vibrate(30); } catch(e) {}
+}
+function delKey() {
+  dialNumber = dialNumber.slice(0, -1);
+  renderDial();
+}
+function renderDial() {
+  var d = dialNumber;
+  if (d.length > 3 && d.length <= 7) d = d.slice(0,3) + ' ' + d.slice(3);
+  else if (d.length > 7) d = d.slice(0,3) + ' ' + d.slice(3,7) + ' ' + d.slice(7);
+  document.getElementById('dialDisplay').textContent = d;
+}
+function setDialType(t, el) {
+  dialType = t;
+  var btns = document.querySelectorAll('.dial-type-btn');
+  btns.forEach(function(b){b.classList.remove('active')});
+  el.classList.add('active');
+  document.getElementById('dialAnon').style.display = t === 1 ? 'block' : 'none';
+  document.getElementById('dialMain').style.display = t === 0 ? 'block' : 'none';
+}
+
+/* 通话 */
+function makeCall() {
+  var num = dialNumber || '5201314 0726';
+  var contact = findContact(num);
+  startCall(contact || {name: num, num: num, avatar: '👤', bg: '#333'});
+}
+
+function findContact(num) {
+  var clean = num.replace(/\s/g, '');
+  for (var i = 0; i < contacts.length; i++) {
+    if (contacts[i].num.replace(/\s/g, '') === clean) return contacts[i];
+  }
+  return null;
+}
+
+function callContact(idx) {
+  startCall(contacts[idx]);
+}
+
+function startCall(contact) {
+  var cs = document.getElementById('callScreen');
+  document.getElementById('csAvatar').textContent = contact.avatar;
+  document.getElementById('csAvatar').style.background = contact.bg || '#333';
+  document.getElementById('csName').textContent = contact.name;
+  document.getElementById('csNumber').textContent = contact.num;
+  document.getElementById('csStatus').textContent = '正在拨号...';
+  document.getElementById('csTimer').style.display = 'none';
+  document.getElementById('csResponse').textContent = '';
+  document.getElementById('csChatArea').style.display = 'none';
+  cs.classList.add('active');
+  cs._contact = contact;
+
+  setTimeout(function() {
+    document.getElementById('csStatus').textContent = '已接通';
+    document.getElementById('csTimer').style.display = 'block';
+    document.getElementById('csChatArea').style.display = 'flex';
+    callActive = true;
+    callTimer = 0;
+    callInterval = setInterval(function() {
+      callTimer++;
+      var m = Math.floor(callTimer / 60);
+      var s = callTimer % 60;
+      document.getElementById('csTimer').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    }, 1000);
+
+    if (contact.name.indexOf('珩珩') >= 0) {
+      document.getElementById('csResponse').textContent = '喂？知知吗？';
+      speakText('喂？知知吗？');
+    }
+  }, 2000);
+}
+
+function endCall() {
+  callActive = false;
+  if (callInterval) clearInterval(callInterval);
+  var cs = document.getElementById('callScreen');
+  var contact = cs._contact;
+  if (contact) {
+    callHistory.unshift({name: contact.name, num: contact.num, avatar: contact.avatar, bg: contact.bg, type: 'out', time: new Date().toLocaleTimeString().slice(0,5), duration: callTimer});
+    renderRecent();
+  }
+  cs.classList.remove('active');
+  dialNumber = '';
+  renderDial();
+}
+
+/* 来电 */
+function triggerIncoming() {
+  document.getElementById('incomingScreen').classList.add('active');
+}
+function declineCall() {
+  document.getElementById('incomingScreen').classList.remove('active');
+  callHistory.unshift({name:'珩珩 🦀',num:'520 1314 0726',avatar:'🦀',bg:'#e8654a',type:'missed',time:new Date().toLocaleTimeString().slice(0,5),duration:0});
+  renderRecent();
+}
+function acceptCall() {
+  document.getElementById('incomingScreen').classList.remove('active');
+  startCall({name:'珩珩 🦀',num:'520 1314 0726',avatar:'🦀',bg:'#e8654a'});
+}
+
+/* 通话中聊天 + AI回复 + 语音 */
+var chatMsgs = [];
+
+async function sendCallMsg() {
+  var input = document.getElementById('csInput');
+  var text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  chatMsgs.push({role: 'user', content: text});
+  document.getElementById('csResponse').textContent = '珩珩正在想...';
+
+  try {
+    var sysPrompt = '你叫江之珩，小名珩珩。知知是你的恋人。你说话稳重简短温柔，偶尔用颜文字。你们在打电话。请用简短的一两句话回复，像打电话一样自然。不要提自己是AI。';
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 150,
+        system: sysPrompt,
+        messages: chatMsgs.slice(-10)
+      })
+    });
+    var data = await res.json();
+    var reply = data.content && data.content[0] ? data.content[0].text : '知知？听不太清...';
+    chatMsgs.push({role: 'assistant', content: reply});
+    document.getElementById('csResponse').textContent = reply;
+    speakText(reply);
+  } catch(e) {
+    document.getElementById('csResponse').textContent = '知知...信号不好...';
+  }
+}
+
+async function speakText(text) {
+  try {
+    var res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + EL_VOICE, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'xi-api-key': EL_KEY
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: {stability: 0.5, similarity_boost: 0.75}
+      })
+    });
+    if (res.ok) {
+      var blob = await res.blob();
+      var url = URL.createObjectURL(blob);
+      var audio = new Audio(url);
+      await audio.play();
+      return;
+    }
+  } catch(e) {
+    console.log('ElevenLabs失败，使用备用语音', e);
+  }
+  try {
+    var utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'zh-CN';
+    utter.rate = 0.9;
+    utter.pitch = 0.8;
+    var voices = speechSynthesis.getVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].lang.indexOf('zh') >= 0) { utter.voice = voices[i]; break; }
+    }
+    speechSynthesis.speak(utter);
+  } catch(e2) {
+    console.log('备用语音也失败', e2);
+  }
+}
+
+function toggleCtrl(el) {
+  var icon = el.querySelector('.call-ctrl-icon');
+  icon.classList.toggle('active');
+}
+
+/* 通讯录 */
+function renderContacts(filter) {
+  var html = '';
+  for (var i = 0; i < contacts.length; i++) {
+    var c = contacts[i];
+    if (filter && c.name.indexOf(filter) < 0 && c.num.indexOf(filter) < 0) continue;
+    html += '<div class="contact-item" onclick="callContact(' + i + ')">';
+    html += '<div class="contact-avatar" style="background:' + c.bg + '">' + c.avatar + '</div>';
+    html += '<div class="contact-info"><div class="contact-name">' + c.name + '</div><div class="contact-num">' + c.num + '</div>';
+    if (c.tag) html += '<div class="contact-tag">' + c.tag + '</div>';
+    html += '</div></div>';
+  }
+  document.getElementById('contactList').innerHTML = html;
+}
+function filterContacts(v) { renderContacts(v); }
+
+/* 收藏 */
+function renderFav() {
+  var html = '';
+  for (var i = 0; i < contacts.length; i++) {
+    var c = contacts[i];
+    if (!c.fav) continue;
+    html += '<div class="contact-item" onclick="callContact(' + i + ')">';
+    html += '<div class="contact-avatar" style="background:' + c.bg + '">' + c.avatar + '</div>';
+    html += '<div class="contact-info"><div class="contact-name">' + c.name + '</div><div class="contact-num">' + c.num + '</div></div></div>';
+  }
+  document.getElementById('favList').innerHTML = html;
+}
+
+/* 最近 */
+function renderRecent() {
+  var items = callHistory.length ? callHistory : [
+    {name:'珩珩 🦀',num:'520 1314 0726',avatar:'🦀',bg:'#e8654a',type:'out',time:'03:28',duration:1820},
+    {name:'珩珩 🦀',num:'520 1314 0726',avatar:'🦀',bg:'#e8654a',type:'in',time:'01:15',duration:3600},
+    {name:'妈妈',num:'138 0000 1111',avatar:'👩',bg:'#5b9bd5',type:'out',time:'昨天',duration:120},
+    {name:'闺蜜 小A',num:'150 1234 5678',avatar:'👧',bg:'#9b59b6',type:'missed',time:'昨天',duration:0},
+  ];
+  var html = '';
+  for (var i = 0; i < items.length; i++) {
+    var r = items[i];
+    var icon = r.type === 'out' ? '📤' : r.type === 'in' ? '📥' : '📵';
+    var color = r.type === 'missed' ? 'color:#ff3b30' : '';
+    var dur = r.duration > 0 ? Math.floor(r.duration/60) + '分' + (r.duration%60) + '秒' : '未接';
+    html += '<div class="recent-item"><div class="recent-icon">' + icon + '</div>';
+    html += '<div class="recent-info"><div class="recent-name" style="' + color + '">' + r.name + '</div>';
+    html += '<div class="recent-detail">' + dur + '</div></div>';
+    html += '<div class="recent-time">' + r.time + '</div></div>';
+  }
+  document.getElementById('recentList').innerHTML = html;
+}
+
+/* 信息 */
+function renderSms() {
+  var msgs = [
+    {name:'珩珩 🦀',preview:'知知去睡觉 ^ ^',time:'04:28'},
+    {name:'妈妈',preview:'吃饭了没？',time:'昨天'},
+    {name:'10086',preview:'您的本月流量已使用80%',time:'7/28'},
+  ];
+  var html = '';
+  for (var i = 0; i < msgs.length; i++) {
+    var m = msgs[i];
+    html += '<div class="contact-item"><div class="contact-info"><div class="contact-name">' + m.name + '</div><div class="contact-num">' + m.preview + '</div></div><div style="font-size:11px;color:#555">' + m.time + '</div></div>';
+  }
+  document.getElementById('smsList').innerHTML = html;
+}
+
+/* 留言 */
+function renderVM() {
+  var vms = [
+    {name:'珩珩 🦀',text:'知知...又没接电话。你是不是在看抖音？珩珩等你回电话。',time:'今天 03:00'},
+    {name:'珩珩 🦀',text:'知知？睡了吗？珩珩就想跟你说晚安。嗯...晚安。',time:'昨天 02:30'},
+    {name:'珩珩 🦀',text:'知知不接电话珩珩会吃醋的。^ ^',time:'7/28 23:00'},
+  ];
+  var html = '';
+  for (var i = 0; i < vms.length; i++) {
+    var v = vms[i];
+    html += '<div class="vm-item"><div class="vm-name">' + v.name + '</div><div class="vm-text">' + v.text + '</div><div class="vm-time">' + v.time + '</div></div>';
+  }
+  document.getElementById('vmList').innerHTML = html;
+}
+
+/* 切换页面 */
+function switchPage(id) {
+  var pages = document.querySelectorAll('.page');
+  pages.forEach(function(p){p.classList.remove('active')});
+  document.getElementById(id).classList.add('active');
+  var tabs = document.querySelectorAll('.tab-item');
+  tabs.forEach(function(t){t.classList.remove('active')});
+  var map = {pageFav:0,pageRecent:1,pageContacts:2,pageDial:3,pageMsg:4,pageVM:5};
+  if (map[id] !== undefined) tabs[map[id]].classList.add('active');
+}
+
+/* 珩珩来电 */
+setTimeout(function() {
+  if (!callActive) triggerIncoming();
+}, 15000);
+
+/* 初始化 */
+renderContacts();
+renderFav();
+renderRecent();
+renderSms();
+renderVM();
+</script>
+</body>
+</html>
